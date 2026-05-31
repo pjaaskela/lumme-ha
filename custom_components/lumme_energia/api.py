@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import logging
+from collections import defaultdict
 from datetime import date, timedelta
 
 import aiohttp
@@ -124,12 +125,12 @@ class LummeApi:
         self,
         start: date,
         end: date,
-        view_period: str = "hour",
+        view_period: str = "day",
     ) -> list[dict]:
         """Fetch consumption data.
-        view_period: 'hour' = 15-min slots, 'day' = hourly slots.
+        view_period: 'day' = hourly slots (24/day), 'month' = daily aggregates.
         Returns list of {startTime, endTime, sum, costWithVat}.
-        Data has ~1-day lag; today's data is typically not yet available.
+        Data has ~1-2 day lag; today/yesterday may not yet be available.
         """
         await self._ensure_auth()
         gsrn = await self.get_gsrn()
@@ -152,14 +153,33 @@ class LummeApi:
         return data.get("items", []) if isinstance(data, dict) else []
 
     async def get_latest_day_consumption(self) -> tuple[date, float]:
-        """Return (date, kWh) for the most recent day with data."""
+        """Return (date, kWh) for the most recent day with complete data.
+
+        Uses viewPeriod=day (hourly slots) over a 7-day window.
+        Requires >=20 hourly readings to consider a day complete (handles DST).
+        """
         today = date.today()
-        for delta in range(3):
-            d = today - timedelta(days=delta)
-            items = await self.get_consumption(d, d, "hour")
-            if items:
-                total = round(sum(i.get("sum", 0) for i in items), 4)
-                return d, total
+        start = today - timedelta(days=7)
+        end = today - timedelta(days=1)
+        items = await self.get_consumption(start, end, "day")
+        if not items:
+            return today - timedelta(days=1), 0.0
+
+        daily_sum: dict[str, float] = defaultdict(float)
+        daily_count: dict[str, int] = defaultdict(int)
+        for item in items:
+            d_str = item.get("startTime", "")[:10]
+            daily_sum[d_str] += item.get("sum", 0)
+            daily_count[d_str] += 1
+
+        for d_str in sorted(daily_sum.keys(), reverse=True):
+            if daily_count[d_str] >= 20:
+                return date.fromisoformat(d_str), round(daily_sum[d_str], 4)
+
+        if daily_sum:
+            d_str = max(daily_sum.keys())
+            return date.fromisoformat(d_str), round(daily_sum[d_str], 4)
+
         return today - timedelta(days=1), 0.0
 
     async def get_monthly_consumption_kwh(self) -> float:

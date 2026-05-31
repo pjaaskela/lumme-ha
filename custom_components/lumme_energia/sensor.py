@@ -55,7 +55,7 @@ class LummeBaseSensor(CoordinatorEntity, SensorEntity):
 
 class LummeLatestDaySensor(LummeBaseSensor):
     """Yesterday's (or most recent available) daily consumption."""
-    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_state_class = SensorStateClass.TOTAL
     _attr_icon = "mdi:lightning-bolt"
 
     def __init__(self, coordinator: LummeCoordinator, entry: ConfigEntry) -> None:
