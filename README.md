@@ -16,7 +16,7 @@ Fetches your daily and monthly electricity consumption from the OmaLumme custome
 ### HACS (recommended)
 
 1. Open HACS → Integrations → ⋮ → Custom repositories
-2. Add `https://github.com/pjaaskel/lumme-ha` as type **Integration**
+2. Add `https://github.com/pjaaskela/lumme-ha` as type **Integration**
 3. Find "Lumme Energia" and install it
 4. Restart Home Assistant
 
@@ -45,7 +45,7 @@ Copy `custom_components/lumme_energia/` into your HA `config/custom_components/`
 
 ## Support
 
-If this saves you time, consider [buying me a coffee ☕](https://ko-fi.com/pjaaskel)
+If this saves you time, consider [buying me a coffee ☕](https://ko-fi.com/pjaaskela)
 
 ## License
 
