@@ -1,0 +1,17 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Lumme Energia – Login",
+        "data": {
+          "username": "Email address",
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Login failed. Check your email and password.",
+      "cannot_connect": "Could not connect. Check your internet connection."
+    }
+  }
+}

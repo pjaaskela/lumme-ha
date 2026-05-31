@@ -1,0 +1,17 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Lumme Energia – kirjautuminen",
+        "data": {
+          "username": "Sähköpostiosoite",
+          "password": "Salasana"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Kirjautuminen epäonnistui. Tarkista sähköposti ja salasana.",
+      "cannot_connect": "Yhteyttä ei saatu. Tarkista internetyhteys."
+    }
+  }
+}
