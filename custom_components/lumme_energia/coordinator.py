@@ -1,6 +1,7 @@
 """DataUpdateCoordinator for Lumme Energia."""
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import timedelta
 
@@ -25,9 +26,16 @@ class LummeCoordinator(DataUpdateCoordinator):
 
     async def _async_update_data(self) -> dict:
         try:
-            latest_date, latest_kwh = await self.api.get_latest_day_consumption()
-            monthly_kwh = await self.api.get_monthly_consumption_kwh()
-            contracts = await self.api.get_contracts()
+            # Ensure auth once before parallel fetches so both don't race to authenticate
+            await self.api._ensure_auth()
+
+            # Fetch day and month consumption in parallel; contracts cached after first call
+            (latest_date, latest_kwh), monthly_kwh, contracts, gsrn = await asyncio.gather(
+                self.api.get_latest_day_consumption(),
+                self.api.get_monthly_consumption_kwh(),
+                self.api.get_contracts(),
+                self.api.get_gsrn(),
+            )
             address = ""
             if contracts:
                 a = contracts[0].get("meteringpointAddress", {})
@@ -37,7 +45,6 @@ class LummeCoordinator(DataUpdateCoordinator):
                     a.get("cityName", ""),
                 ]
                 address = " ".join(p for p in parts if p).strip()
-            gsrn = await self.api.get_gsrn()
             return {
                 "latest_date": latest_date.isoformat(),
                 "latest_kwh": latest_kwh,

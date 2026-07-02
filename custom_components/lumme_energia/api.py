@@ -31,12 +31,15 @@ class LummeApi:
         self._token: str | None = None
         self._customer_id: int | None = None
         self._gsrn: str | None = None
+        self._contracts: list[dict] | None = None
 
     async def authenticate(self) -> None:
         ua = {"User-Agent": "Mozilla/5.0"}
 
-        # Clear stale cookies so Keycloak shows the login form instead of redirecting
+        # Clear stale cookies and cached data so we start fresh
         self._session.cookie_jar.clear()
+        self._contracts = None
+        self._gsrn = None
 
         async with self._session.get(AUTH_URL, headers=ua) as resp:
             html = await resp.text()
@@ -101,6 +104,8 @@ class LummeApi:
         return {"content": content}
 
     async def get_contracts(self) -> list[dict]:
+        if self._contracts is not None:
+            return self._contracts
         await self._ensure_auth()
         cid = self._customer_id
         async with self._session.get(
@@ -109,10 +114,12 @@ class LummeApi:
         ) as resp:
             if resp.status == 401:
                 self._token = None
+                self._contracts = None
                 raise LummeAuthError("Token expired")
             if resp.status != 200:
                 raise LummeApiError(f"contractBasicData failed: {resp.status}")
-            return json.loads(await resp.text())
+            self._contracts = json.loads(await resp.text())
+            return self._contracts
 
     async def get_gsrn(self) -> str:
         if self._gsrn:
