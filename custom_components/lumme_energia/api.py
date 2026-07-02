@@ -35,13 +35,18 @@ class LummeApi:
     async def authenticate(self) -> None:
         ua = {"User-Agent": "Mozilla/5.0"}
 
+        # Clear stale cookies so Keycloak shows the login form instead of redirecting
+        self._session.cookie_jar.clear()
+
         async with self._session.get(AUTH_URL, headers=ua) as resp:
             html = await resp.text()
 
         soup = BeautifulSoup(html, "html.parser")
-        form = soup.find("form")
+        form = soup.find("form", id="kc-form-login") or soup.find("form")
         if not form:
             raise LummeAuthError("Login form not found")
+        if not form.get("action"):
+            raise LummeAuthError("Login form has no action URL")
 
         action = form["action"]
         inputs = {
